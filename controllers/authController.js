@@ -88,14 +88,57 @@ export const login = asyncHandler(async (req, res) => {
   }
 });
 
+
 /**
- * ✅ Get All Users
+ * ✅ Get All Users (with query filters + CR restriction)
  * GET /api/auth
  */
 export const getAllUsers = asyncHandler(async (req, res) => {
-  const users = await User.find().select("-password");
+  const { 
+    name, 
+    email, 
+    role, 
+    className, 
+    department, 
+    session, 
+    semester, 
+    rollNo, 
+    phone, 
+    gender 
+  } = req.query;
+
+  const query = {};
+
+  // 🔍 General filtering (for admins or CR)
+  if (name) query.name = new RegExp(name, "i");
+  if (email) query.email = new RegExp(email, "i");
+  if (role) query.role = role;
+  if (className) query.className = className;
+  if (department) query.department = department;
+  if (session) query.session = session;
+  if (semester) query.semester = semester;
+  if (rollNo) query.rollNo = new RegExp(rollNo, "i");
+  if (phone) query.phone = new RegExp(phone, "i");
+  if (gender) query.gender = gender;
+
+  // ✅ If CR logged in → restrict to their class, semester, session
+  if (req.user.role === "cr") {
+    query.className = req.user.className;
+    query.semester = req.user.semester;
+    query.session = req.user.session;
+    query.role = "student"; // CR should only view students
+  }
+
+  // ✅ Fetch users (excluding passwords)
+  const users = await User.find(query).select("-password");
+
+  if (!users.length) {
+    return res.status(404).json({ message: "No users found" });
+  }
+
   res.json(users);
 });
+
 
 /**
  * ✅ Get User by ID

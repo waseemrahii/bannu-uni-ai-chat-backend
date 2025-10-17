@@ -13,79 +13,11 @@ const getDayName = (dateString) => {
   return days[date.getDay()];
 };
 
-// // ✅ Create new schedule
-// // POST /api/schedules
-// export const createSchedule = asyncHandler(async (req, res) => {
-//   const data = req.body;
 
-//   // 🧩 CR can only create schedules for their own semester
-//   if (req.user.role === "cr" && data.semester !== req.user.semester) {
-//     res.status(403);
-//     throw new Error("CR can only create schedules for their own semester");
-//   }
-
-//   // 🗓 Automatically set or validate 'day' from the selected date
-//   if (data.date) {
-//     const computedDay = getDayName(data.date);
-
-//     if (data.day && data.day !== computedDay) {
-//       // ❌ Mismatch case (e.g., date=2025-10-11 but day="Friday")
-//       res.status(400);
-//       throw new Error(`Invalid day selected! The date ${data.date} is actually a ${computedDay}.`);
-//     }
-
-//     // ✅ Auto-fix or assign day
-//     data.day = computedDay;
-//   }
-
-//   const newSchedule = await Schedule.create({
-//     ...data,
-//     createdBy: req.user._id,
-//   });
-
-//   const populated = await Schedule.findById(newSchedule._id).populate(
-//     "createdBy",
-//     "name email role className semester"
-//   );
-
-//   res.status(201).json(populated);
-// });
-
-// // ✅ Update schedule by ID
-// export const updateSchedule = asyncHandler(async (req, res) => {
-//   const schedule = await Schedule.findById(req.params.id);
-//   if (!schedule) {
-//     res.status(404);
-//     throw new Error("Schedule not found");
-//   }
-
-//   if (req.user.role === "cr" && schedule.semester !== req.user.semester) {
-//     res.status(403);
-//     throw new Error("CR can only update schedules for their semester");
-//   }
-
-//   // 🗓 Check for date/day consistency
-//   if (req.body.date) {
-//     const computedDay = getDayName(req.body.date);
-//     if (req.body.day && req.body.day !== computedDay) {
-//       res.status(400);
-//       throw new Error(`Invalid day selected! The date ${req.body.date} is actually a ${computedDay}.`);
-//     }
-//     req.body.day = computedDay;
-//   }
-
-//   const updated = await Schedule.findByIdAndUpdate(req.params.id, req.body, {
-//     new: true,
-//   }).populate("createdBy", "name email role className semester");
-
-//   res.json(updated);
-// });
-
-//// for  assignment 
 
 export const createSchedule = asyncHandler(async (req, res) => {
   const data = req.body;
-
+ console.log(" data======", data)
   // CR permission check
   if (req.user.role === "cr" && data.semester !== req.user.semester) {
     res.status(403);
@@ -124,6 +56,7 @@ export const createSchedule = asyncHandler(async (req, res) => {
     "name email role className semester"
   );
 
+   console.log("form data response ======",populated)
   res.status(201).json(populated);
 });
 export const updateSchedule = asyncHandler(async (req, res) => {

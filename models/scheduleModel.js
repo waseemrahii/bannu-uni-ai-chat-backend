@@ -24,8 +24,8 @@ const scheduleSchema = new mongoose.Schema(
     day: { type: String }, // For regular classes: “Monday”, “Tuesday”
     date: { type: Date }, // Used for exams, quizzes, tests
 
-    startTime: { type: String }, // “09:00 AM”
-    endTime: { type: String },   // “10:30 AM”
+    startTime: { type: String }, // “09:00 AM” not in assigmnt 
+    endTime: { type: String },   // “10:30 AM” not in assigmnt  
     room: { type: String },
 
     // 📘 Assignment-specific fields

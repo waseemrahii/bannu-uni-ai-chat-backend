@@ -21,7 +21,6 @@ router.post('/login', login);
 
 
 
-// Admin Routes
 router.get("/", protect,  getAllUsers);
 router.delete("/:id", protect,  deleteUser);
 
