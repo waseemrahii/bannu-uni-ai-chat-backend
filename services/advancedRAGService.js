@@ -1,4 +1,3 @@
-
 import { RecursiveCharacterTextSplitter } from "@langchain/classic/text_splitter"
 import VectorDocument from "../models/vectorDocumentModel.js"
 import embeddingService from "./embeddingService.js"
@@ -81,7 +80,14 @@ class AdvancedRAGService {
       if (Object.keys(filters).length > 0) {
         const matchStage = { $match: {} }
         Object.entries(filters).forEach(([key, value]) => {
-          matchStage.$match[`metadata.${key}`] = value
+          if (key === "metadata.date") {
+            // Handle date range filters
+            matchStage.$match[key] = value
+          } else if (key.startsWith("metadata.")) {
+            matchStage.$match[key] = value
+          } else {
+            matchStage.$match[`metadata.${key}`] = value
+          }
         })
         pipeline.push(matchStage)
       }
@@ -108,16 +114,21 @@ class AdvancedRAGService {
         },
       }
 
-      // Add metadata filters
       Object.entries(filters).forEach(([key, value]) => {
-        matchStage.$match[`metadata.${key}`] = value
+        if (key === "metadata.date") {
+          matchStage.$match[key] = value
+        } else if (key.startsWith("metadata.")) {
+          matchStage.$match[key] = value
+        } else {
+          matchStage.$match[`metadata.${key}`] = value
+        }
       })
 
       const results = await VectorDocument.find(matchStage.$match).limit(topK).lean()
 
       return results.map((doc) => ({
         ...doc,
-        similarityScore: 0.5, // Lower score for keyword matches
+        similarityScore: 0.5,
       }))
     } catch (error) {
       console.error("[AdvancedRAG] Error in keyword search:", error)
@@ -133,14 +144,20 @@ class AdvancedRAGService {
       const matchStage = { $match: {} }
 
       Object.entries(filters).forEach(([key, value]) => {
-        matchStage.$match[`metadata.${key}`] = value
+        if (key === "metadata.date") {
+          matchStage.$match[key] = value
+        } else if (key.startsWith("metadata.")) {
+          matchStage.$match[key] = value
+        } else {
+          matchStage.$match[`metadata.${key}`] = value
+        }
       })
 
       const results = await VectorDocument.find(matchStage.$match).limit(topK).lean()
 
       return results.map((doc) => ({
         ...doc,
-        similarityScore: 0.3, // Lower score for metadata matches
+        similarityScore: 0.3,
       }))
     } catch (error) {
       console.error("[AdvancedRAG] Error in metadata search:", error)

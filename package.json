@@ -6,11 +6,11 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-     "lint": "eslint .", 
+    "lint": "eslint .",
     "seed-database": "node scripts/seedDatabase.js",
     "ingest-vectors": "node scripts/ingestVectors.js",
     "test-vectors": "node scripts/testVectorSearch.js"
-    },
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -21,6 +21,7 @@
     "@langchain/classic": "^1.0.0",
     "axios": "^1.12.2",
     "bcryptjs": "^3.0.2",
+    "bull": "^4.16.5",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
