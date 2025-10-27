@@ -68,31 +68,79 @@ class RAGService {
    * @param {number} topK - Number of results to return
    * @returns {Promise<object[]>} - Retrieved documents with scores
    */
-  async retrieveRelevantDocuments(query, filters = {}, topK = 5) {
-    try {
-      console.log("[RAGService] Retrieving documents for query:", query)
+  // async retrieveRelevantDocuments(query, filters = {}, topK = 5) {
+  //   try {
+  //     console.log("[RAGService] Retrieving documents for query:", query)
 
-      if (this.useVectorSearch) {
-        try {
-          const results = await this._vectorSearch(query, filters, topK)
-          if (results && results.length > 0) {
-            console.log(`[RAGService] Vector search returned ${results.length} documents`)
-            return results
-          }
-        } catch (vectorError) {
-          console.warn("[RAGService] Vector search failed, falling back to keyword search:", vectorError.message)
+  //     if (this.useVectorSearch) {
+  //       try {
+  //         const results = await this._vectorSearch(query, filters, topK)
+  //         if (results && results.length > 0) {
+  //           console.log(`[RAGService] Vector search returned ${results.length} documents`)
+  //           return results
+  //         }
+  //       } catch (vectorError) {
+  //         console.warn("[RAGService] Vector search failed, falling back to keyword search:", vectorError.message)
+  //       }
+  //     }
+
+  //     console.log("[RAGService] Using keyword search fallback")
+  //     const results = await this.keywordSearch(query, filters, topK)
+  //     return results
+  //   } catch (error) {
+  //     console.error("[RAGService] Error retrieving documents:", error.message)
+  //     return []
+  //   }
+  // }
+
+  // In RAG service - update retrieveRelevantDocuments method
+    async retrieveRelevantDocuments(query, filters = {}, topK = 5) {
+  try {
+    console.log("[RAGService] Retrieving documents for query:", query);
+
+    if (this.useVectorSearch) {
+      try {
+        const results = await this._vectorSearch(query, filters, topK);
+        if (results && results.length > 0) {
+          console.log(`[RAGService] Vector search returned ${results.length} documents`);
+          
+          // Remove duplicate documents by content
+          const uniqueResults = this._removeDuplicateDocuments(results);
+          console.log(`[RAGService] After deduplication: ${uniqueResults.length} documents`);
+          
+          return uniqueResults;
         }
+      } catch (vectorError) {
+        console.warn("[RAGService] Vector search failed:", vectorError.message);
       }
-
-      console.log("[RAGService] Using keyword search fallback")
-      const results = await this.keywordSearch(query, filters, topK)
-      return results
-    } catch (error) {
-      console.error("[RAGService] Error retrieving documents:", error.message)
-      return []
     }
-  }
 
+    console.log("[RAGService] Using keyword search fallback");
+    const results = await this.keywordSearch(query, filters, topK);
+    return this._removeDuplicateDocuments(results);
+  } catch (error) {
+    console.error("[RAGService] Error retrieving documents:", error.message);
+    return [];
+  }
+}
+
+/**
+ * Remove duplicate documents based on content
+ * @private
+ */
+_removeDuplicateDocuments(documents) {
+  const seen = new Set();
+  return documents.filter(doc => {
+    // Create a signature based on content and metadata
+    const signature = doc.content.substring(0, 100) + (doc.metadata.sourceId || '');
+    if (seen.has(signature)) {
+      return false;
+    }
+    seen.add(signature);
+    return true;
+  });
+}
+  
   /**
    * Vector search using MongoDB Atlas $vectorSearch operator
    * @private
@@ -209,27 +257,93 @@ class RAGService {
    * @param {object} filters - Metadata filters
    * @returns {Promise<object>} - Generated answer with sources
    */
-  async generateRAGAnswer(query, filters = {}) {
-    try {
-      console.log("[RAGService] Generating RAG answer for:", query)
+//   async generateRAGAnswer(query, filters = {}) {
+//     try {
+//       console.log("[RAGService] Generating RAG answer for:", query)
 
-      // Step 1: Retrieve relevant documents
-      const retrievedDocs = await this.retrieveRelevantDocuments(query, filters, 5)
+//       // Step 1: Retrieve relevant documents
+//       const retrievedDocs = await this.retrieveRelevantDocuments(query, filters, 5)
 
-      if (retrievedDocs.length === 0) {
-        console.log("[RAGService] No relevant documents found")
-        return {
-          answer: "I could not find relevant information to answer your question.",
-          sources: [],
-          retrievedCount: 0,
-        }
-      }
+//       if (retrievedDocs.length === 0) {
+//         console.log("[RAGService] No relevant documents found")
+//         return {
+//           answer: "I could not find relevant information to answer your question.",
+//           sources: [],
+//           retrievedCount: 0,
+//         }
+//       }
 
-      // Step 2: Build context from retrieved documents
-      const context = retrievedDocs.map((doc, idx) => `[Source ${idx + 1}]\n${doc.content}`).join("\n\n")
+//       // Step 2: Build context from retrieved documents
+//       const context = retrievedDocs.map((doc, idx) => `[Source ${idx + 1}]\n${doc.content}`).join("\n\n")
 
-      // Step 3: Create prompt with context
-      const systemPrompt = `You are a helpful university assistant. Use the provided context to answer the student's question accurately and helpfully. If the context doesn't contain relevant information, say so clearly.
+//       // Step 3: Create prompt with context
+//       const systemPrompt = `You are a helpful university assistant. Use the provided context to answer the student's question accurately and helpfully. If the context doesn't contain relevant information, say so clearly.
+
+// Context:
+// ${context}
+
+// Instructions:
+// - Answer based on the provided context
+// - Be concise and clear
+// - If information is not in the context, acknowledge it
+// - Provide specific details when available`
+
+//       // Step 4: Generate answer using Gemini
+//       const model = this.client.getGenerativeModel({
+//         model: "gemini-2.0-flash",
+//       })
+
+//       const result = await model.generateContent({
+//         contents: [
+//           {
+//             role: "user",
+//             parts: [{ text: query }],
+//           },
+//         ],
+//         systemInstruction: systemPrompt,
+//       })
+
+//       const answer = result.response.text()
+
+//       // Step 5: Format response with sources
+//       return {
+//         answer,
+//         sources: retrievedDocs.map((doc) => ({
+//           content: doc.content.substring(0, 200) + "...",
+//           type: doc.metadata.type,
+//           metadata: doc.metadata,
+//           score: doc.similarityScore || 0,
+//         })),
+//         retrievedCount: retrievedDocs.length,
+//       }
+//     } catch (error) {
+//       console.error("[RAGService] Error generating RAG answer:", error)
+//       throw error
+//     }
+//   }
+
+// In your RAG service - fix the generateRAGAnswer method
+     async generateRAGAnswer(query, filters = {}) {
+  try {
+    console.log("[RAGService] Generating RAG answer for:", query);
+
+    // Step 1: Retrieve relevant documents
+    const retrievedDocs = await this.retrieveRelevantDocuments(query, filters, 5);
+
+    if (retrievedDocs.length === 0) {
+      console.log("[RAGService] No relevant documents found");
+      return {
+        answer: "I could not find relevant information to answer your question.",
+        sources: [],
+        retrievedCount: 0,
+      };
+    }
+
+    // Step 2: Build context from retrieved documents
+    const context = retrievedDocs.map((doc, idx) => `[Source ${idx + 1}]\n${doc.content}`).join("\n\n");
+
+    // Step 3: Create prompt with context
+    const systemPrompt = `You are a helpful university assistant. Use the provided context to answer the student's question accurately and helpfully. If the context doesn't contain relevant information, say so clearly.
 
 Context:
 ${context}
@@ -238,42 +352,41 @@ Instructions:
 - Answer based on the provided context
 - Be concise and clear
 - If information is not in the context, acknowledge it
-- Provide specific details when available`
+- Provide specific details when available`;
 
-      // Step 4: Generate answer using Gemini
-      const model = this.client.getGenerativeModel({
-        model: "gemini-2.0-flash",
-      })
+    // Step 4: Generate answer using Gemini
+    const model = this.client.getGenerativeModel({
+      model: "gemini-2.0-flash",
+    });
 
-      const result = await model.generateContent({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: query }],
-          },
-        ],
-        systemInstruction: systemPrompt,
-      })
+    const result = await model.generateContent({
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: query }],
+        },
+      ],
+      systemInstruction: systemPrompt,
+    });
 
-      const answer = result.response.text()
+    const answer = result.response.text();
 
-      // Step 5: Format response with sources
-      return {
-        answer,
-        sources: retrievedDocs.map((doc) => ({
-          content: doc.content.substring(0, 200) + "...",
-          type: doc.metadata.type,
-          metadata: doc.metadata,
-          score: doc.similarityScore || 0,
-        })),
-        retrievedCount: retrievedDocs.length,
-      }
-    } catch (error) {
-      console.error("[RAGService] Error generating RAG answer:", error)
-      throw error
-    }
+    // Step 5: FIXED - Format response with proper sources structure
+    return {
+      answer,
+      sources: retrievedDocs.map((doc) => ({
+        content: doc.content, // Keep full content, let controller truncate if needed
+        type: doc.metadata.type,
+        relevance: doc.similarityScore || 0.5, // Use number, not string percentage
+        metadata: doc.metadata,
+      })),
+      retrievedCount: retrievedDocs.length,
+    };
+  } catch (error) {
+    console.error("[RAGService] Error generating RAG answer:", error);
+    throw error;
   }
-
+}
   /**
    * Update document in vector database
    * @param {string} documentId - Document ID

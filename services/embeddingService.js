@@ -15,7 +15,7 @@ class EmbeddingService {
       throw new Error("GEMINI_API_KEY or GOOGLE_API_KEY is required")
     }
 
-    console.log("[EmbeddingService] API Key found:", apiKey.substring(0, 10) + "...")
+    // console.log("[EmbeddingService] API Key found:", apiKey.substring(0, 10) + "...")
 
     this.client = new GoogleGenerativeAI(apiKey)
     this.apiKey = apiKey
